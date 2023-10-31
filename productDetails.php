@@ -32,7 +32,7 @@ while($row = $result->fetch_array()){
     echo "<p>$row[ProductDesc]</p>";
 
     $qry = "SELECT s.SpecName, ps.SpecVal FROM productspec ps
-            INNER JOIN specification s ON ps.SpecID
+            INNER JOIN specification s ON ps.SpecID=s.SpecID
             WHERE ps.ProductID=?
             ORDER BY ps.priority";
 
@@ -59,7 +59,7 @@ while($row = $result->fetch_array()){
 
 // To Do 2:  Create a Form for adding the product to shopping cart. Starting ....
 echo "<form action='cartFunctions.php' method='post'>";
-echo "<input type='hidden' name='action' value='add' />";
+echo "<input type='hidden' name='actionA' value='add' />";
 echo "<input type='hidden' name='product_id' value='$pid' />";
 echo "Quantity: <input type='number' name='quantity' value='1'
                  min='1' max='10' style='width:40px' required />";
