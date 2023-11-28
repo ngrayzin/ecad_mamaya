@@ -8,7 +8,51 @@ if($_POST) //Post Data received from Shopping cart page.
 {
 	// To Do 6 (DIY): Check to ensure each product item saved in the associative
 	//                array is not out of stock
-	
+	$qry = "SELECT * FROM ShopCartItem WHERE ShopCartID=?";
+	$stmt = $conn->prepare($qry);
+	$stmt->bind_param("i", $_SESSION["Cart"]);
+	$stmt->execute();
+	$result = $stmt->get_result();
+	$outOfStock = false;
+
+	if ($result->num_rows > 0) {
+		while ($row = $result->fetch_array()) {
+			$book = $row["ProductID"];
+			$quantityOrdered = $row["Quantity"];
+
+			$qry2 = "SELECT ProductTitle, Quantity FROM Product WHERE ProductID = ?";
+			$stmt2 = $conn->prepare($qry2);
+			$stmt2->bind_param("i", $book);
+			$stmt2->execute();
+			$result2 = $stmt2->get_result();
+
+			if ($result2->num_rows > 0) {
+				$rowProduct = $result2->fetch_assoc();
+				$productName = $rowProduct["ProductTitle"];
+				$quantityInStock = $rowProduct["Quantity"];
+
+				if ($quantityInStock < $quantityOrdered) {
+					$outOfStock = true;
+					// If the product is out of stock, display an error message
+					echo "Product $book: $productName is out of stock!<br />";
+				}
+			} else {
+				// If product not found in Product table, handle accordingly
+				echo "Product $book not found!<br />";
+			}
+
+			$stmt2->close();
+		}
+
+		if ($outOfStock) {
+			echo "Please return to the shopping cart to amend your purchase<br />";
+			include("footer.php");
+			exit;
+		}
+	}
+
+	$stmt->close();
+
 	// End of To Do 6
 	
 	$paypal_data = '';
@@ -22,7 +66,7 @@ if($_POST) //Post Data received from Shopping cart page.
 	}
 	
 	// To Do 1A: Compute GST amount 7% for Singapore, round the figure to 2 decimal places
-	$_SESSION["Tax"] = round($_SESSION["Subtotal"]*0.07, 2);
+	$_SESSION["Tax"] = round($_SESSION["SubTotal"]*0.07, 2);
 	
 	// To Do 1B: Compute Shipping charge - S$2.00 per trip
 	$_SESSION["ShipCharge"] = 2.00;
@@ -113,7 +157,24 @@ if(isset($_GET["token"]) && isset($_GET["PayerID"]))
 	{
 		// To Do 5 (DIY): Update stock inventory in product table 
 		//                after successful checkout
-		//$qry = "SELECT * from shopcart WHERE "
+		$qry = "SELECT * from ShopCartItem WHERE ShopCartID=?";
+		$stmt = $conn->prepare($qry);
+		$stmt->bind_param("i", $_SESSION["Cart"]);
+		$stmt->execute();
+		$result = $stmt->get_result();
+		$stmt->close();
+		if($result->num_rows > 0) {
+			while($row = $result->fetch_array()){
+				$book = $row["ProductID"];
+				$quantity = $row["Quantity"];
+				$qry2 = "UPDATE Product SET Quantity = Quantity - ? WHERE ProductID = ?";
+				$stmt2 = $conn->prepare($qry2);
+				$stmt2->bind_param("ii", $quantity, $book);
+				$stmt2->execute();
+				$result2 = $stmt2->get_result();
+				$stmt2->close();
+			}
+		}
 		// End of To Do 5
 	
 		// To Do 2: Update shopcart table, close the shopping cart (OrderPlaced=1)
