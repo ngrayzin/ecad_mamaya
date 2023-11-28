@@ -23,10 +23,21 @@ if ($results->num_rows > 0) {
     $_SESSION["ShopperID"] = $row["ShopperID"];
 
 	// To Do 2 (Practical 4): Get active shopping cart
-	
+	//SELECT sci.* FROM ShopCartItem sci INNER JOIN ShopCart sc ON sci.ShopCartID = sc.ShopCartID WHERE sc.OrderPlaced = 0 AND sc.ShopperID = ?
+	$qry = "SELECT * FROM ShopCart WHERE OrderPlaced = 0 AND ShopperID = ?";
+	$stmt = $conn->prepare($qry);
+	$stmt->bind_param("i", $_SESSION["ShopperID"]);
+	$stmt->execute();
+	$result = $stmt->get_result();
+	$stmt->close();
+	if($result->num_rows > 0) {
+		while($row = $result->fetch_array()){
+			$_SESSION["Cart"] = $row["ShopCartID"];
+			$_SESSION["NumCartItem"] = $row["Quantity"];
+		}
+    }
 	// Redirect to home page
 	header("Location: index.php");
-   
 	exit;
 }
 else {

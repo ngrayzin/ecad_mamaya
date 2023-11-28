@@ -65,7 +65,6 @@ function addItem() {
 		$stmt->close();
 		$addNewItem = 1;
 	}
-  	$conn->close();
   	// Update session variable used for counting number of items in the shopping cart.
 	if(isset($_SESSION["NumCartItem"])) {
 		$_SESSION["NumCartItem"] = $_SESSION["NumCartItem"] + $addNewItem;
@@ -73,7 +72,13 @@ function addItem() {
 	else{
 		$_SESSION["NumCartItem"] = 1;
 	}
+	$qry = "UPDATE Shopcart SET Quantity = ? WHERE ShopCartID=?";
+	$stmt = $conn->prepare($qry);
+	$stmt->bind_param("ii", $_SESSION["NumCartItem"], $_SESSION["Cart"]);
+	$stmt->execute();
+	$stmt->close();
 	// Redirect shopper to shopping cart page
+  	$conn->close();
 	header("Location: shoppingCart.php");
 	exit;
 }
@@ -119,10 +124,16 @@ function removeItem() {
 	$stmt->bind_param("ii", $pid, $cartid);
 	$stmt->execute();
 	$stmt->close();
-	$conn->close();
 	if(isset($_SESSION["NumCartItem"])) {
 		$_SESSION["NumCartItem"] = $_SESSION["NumCartItem"] - 1;
 	}
+	$qry = "UPDATE Shopcart SET Quantity = ? WHERE ShopCartID=?";
+	$stmt = $conn->prepare($qry);
+	$stmt->bind_param("ii", $_SESSION["NumCartItem"], $_SESSION["Cart"]);
+	$stmt->execute();
+	$stmt->close();
+	
+	$conn->close();
 	header ("Location: shoppingCart.php");
 	exit;
 }		
