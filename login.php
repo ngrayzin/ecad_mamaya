@@ -5,6 +5,11 @@ include("header.php");
 <!-- Create a centrally located container -->
 <div style="width:80%; margin:auto;">
     <!-- Create a HTML form within the container -->
+    <?php 
+        if (isset($_GET['error'])) {
+            $error_message = $_GET['error'];
+            echo '<div class="alert alert-danger" role="alert">' . htmlspecialchars($error_message) . '</div>';
+        } ?>
     <form action="checkLogin.php" method="post">
         <!-- 1st row - Header Row -->
         <div class="mb-3 row">

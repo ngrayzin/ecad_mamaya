@@ -8,43 +8,60 @@ include("header.php");
 $email = $_POST["email"];
 $pwd = $_POST["password"];
 
+$checkLogin = false;
+
 // include the php file that establishes database connection handle: $conn
 include_once("mysql_conn.php");
 
 // To Do 1 (Practical 2): Validate login credentials with database
+$qry = "SELECT * from Shopper WHERE Email=? ";
+$stmt = $conn->prepare($qry);
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$result1 = $stmt->get_result();
 
-$qry = "SELECT * from Shopper WHERE Email='$email' and Password='$pwd'";
-$results = $conn->query($qry);
+if ($result1) {
+    if ($result1->num_rows > 0) {
+        $row1 = $result1->fetch_array();
+        $hashed_pwd = $row1["Password"];
+        if (password_verify($pwd, $hashed_pwd)) {
+            $checkLogin = true;
+            $_SESSION["ShopperName"] = $row1["Name"];
+            $_SESSION["ShopperID"] = $row1["ShopperID"];
 
-if ($results->num_rows > 0) {
-    $row = $results->fetch_assoc();
-    // Save user's info in session variables
-    $_SESSION["ShopperName"] = $row["Name"];
-    $_SESSION["ShopperID"] = $row["ShopperID"];
+            // To Do 2 (Practical 4): Get active shopping cart
+            $qry_cart = "SELECT * FROM ShopCart WHERE OrderPlaced = 0 AND ShopperID = ?";
+            $stmt_cart = $conn->prepare($qry_cart);
+            $stmt_cart->bind_param("i", $_SESSION["ShopperID"]);
+            $stmt_cart->execute();
+            $result_cart = $stmt_cart->get_result();
 
-	// To Do 2 (Practical 4): Get active shopping cart
-	//SELECT sci.* FROM ShopCartItem sci INNER JOIN ShopCart sc ON sci.ShopCartID = sc.ShopCartID WHERE sc.OrderPlaced = 0 AND sc.ShopperID = ?
-	$qry = "SELECT * FROM ShopCart WHERE OrderPlaced = 0 AND ShopperID = ?";
-	$stmt = $conn->prepare($qry);
-	$stmt->bind_param("i", $_SESSION["ShopperID"]);
-	$stmt->execute();
-	$result = $stmt->get_result();
-	$stmt->close();
-	if($result->num_rows > 0) {
-		while($row = $result->fetch_array()){
-			$_SESSION["Cart"] = $row["ShopCartID"];
-			$_SESSION["NumCartItem"] = $row["Quantity"];
+            if ($result_cart->num_rows > 0) {
+                while ($row = $result_cart->fetch_array()) {
+                    $_SESSION["Cart"] = $row["ShopCartID"];
+                    $_SESSION["NumCartItem"] = $row["Quantity"];
+                }
+            }
+
+            // Redirect to home page
+            header("Location: index.php");
+            exit;
+        } else {
+			$error_message = "Invalid Login Credentials";
+			header("Location: login.php?error=" . urlencode($error_message));
+			exit();
 		}
-    }
-	// Redirect to home page
-	header("Location: index.php");
-	exit;
-}
-else {
-	echo  "<h3 style='color:red'>Invalid Login Credentials</h3>";
+    } else {
+		$error_message = "Invalid Login Credentials";
+		header("Location: login.php?error=" . urlencode($error_message));
+		exit();
+	}
+} else {
+    // Handle database query error
+    $error_message = "Database error: " . $conn->error;
 }
 
-//close db connection
+// Close db connection
 $conn->close();
 
 // Include the Page Layout footer
